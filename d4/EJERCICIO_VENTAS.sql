@@ -1,0 +1,181 @@
+-- id	cod	nombre	descripcion	precio_compra	precio_venta	stock
+
+--TABLA PRODUCTOS
+
+CREATE TABLE productos(
+	id SERIAL PRIMARY KEY,
+	cod VARCHAR(8) NOT NULL UNIQUE,
+	nombre VARCHAR(100) NOT NULL,
+	descripcion VARCHAR(500),
+	precio_compra INTEGER NOT NULL DEFAULT 9999999 CHECK(precio_compra > 0),
+	precio_venta INTEGER NOT NULL DEFAULT 9999999 CHECK(precio_venta > 0),
+	stock INTEGER NOT NULL DEFAULT 0 CHECK(stock >=0)
+);
+
+/*
+Tabla CLIENTES
+id	rut	nombre	apellido	telefono1	telefono2	direccion
+*/
+
+CREATE TABLE clientes(
+	id SERIAL PRIMARY KEY,
+	rut VARCHAR (13) NOT NULL UNIQUE,
+	nombre VARCHAR(50) NOT NULL,
+	apellido VARCHAR(50) NOT NULL,
+	telefono1 VARCHAR(13) NOT NULL,
+	telefono2 VARCHAR(13),
+	direccion VARCHAR (150)
+);
+
+/*
+TABLA VENTAS
+
+id	cod_venta	fecha	hora	id_cliente
+
+*/
+
+CREATE TABLE ventas(
+	id SERIAL PRIMARY KEY,
+	cod_venta VARCHAR(10) NOT NULL UNIQUE,
+	fecha date DEFAULT now() not null,
+	hora time DEFAULT now() not null,
+	id_cliente INTEGER REFERENCES clientes(id)
+);
+
+/*
+TABLA DETALLE_VENTAS
+id_venta	id_producto	cantidad	precio_venta
+*/
+
+CREATE TABLE detalle_ventas(
+	id_venta INTEGER,
+	id_producto INTEGER,
+	cantidad INTEGER NOT NULL DEFAULT 1 CHECK(cantidad > 0),
+	precio_venta INTEGER  NOT NULL CHECK(precio_venta > 0),
+	FOREIGN KEY (id_venta) REFERENCES ventas(id),
+	FOREIGN KEY (id_producto) REFERENCES productos(id),
+	PRIMARY KEY(id_venta, id_producto)
+);
+
+
+-- CREAR CLIENTES
+SELECT * FROM CLIENTES;
+
+INSERT INTO clientes VALUES
+(DEFAULT, '1.111.111-1', 'Carlos', 'Soto', '+56912345678', NULL, 'Calle 1, Macul, RM'),
+(DEFAULT, '2.222.222-2', 'Pedro', 'Osorio', '+56912365498', '+56912365493', 'Calle 2, Independencia, RM');
+
+
+--CREAR PRODUCTOS
+
+SELECT * FROM PRODUCTOS;
+
+INSERT INTO productos(cod, nombre, descripcion, precio_compra, precio_venta, stock) VALUES
+('11111111', 'Manzana', 'Manzana roja', 100, 150, 100),
+('22222222', 'Pera', 'Pera Verde', 150, 200, 30);
+
+
+/*
+VENTA N° 1:
+CLIENTE: ID: 1  NOMBRE: CARLOS
+COMPRA LOS SIGUIENTES PRODUCTOS:
+1.- CANTIDAD: 5 MANZANAS -> ID: 1, PRECIO_VENTA: 150
+2.- CANTIDAD: 3 PERAS -> ID: 2, PRECIO_VENTA: 200
+*/
+
+SELECT * FROM CLIENTES;
+SELECT * FROM PRODUCTOS;
+SELECT * FROM VENTAS;
+SELECT * FROM DETALLE_VENTAS;
+
+
+BEGIN;
+-- 1.- CREAR LA VENTA:
+INSERT INTO ventas (cod_venta, id_cliente) VALUES
+('1111111111', 1);
+
+-- 2.- AGREGAR LOS PRODUCTOS VENDIDOS AL DETALLE_VENTAS
+-- PRIMER DETALLE VENTAS:
+INSERT INTO detalle_ventas VALUES
+(1, 1, 5, 150);
+
+-- SEGUNDO DETALLE VENTAS:
+INSERT INTO detalle_ventas VALUES
+(1, 2, 3, 200);
+
+-- 3.- DESCONTAR EL STOCK DE LOS PRODUCTOS
+--ACTUALIZAR STOCK MANZANS -> ID 1
+UPDATE productos SET stock = stock - 5 WHERE id = 1;
+
+--ACTUALIZAR STOCK PERAS -> ID 2
+UPDATE productos SET stock = stock - 3 WHERE id = 2;
+
+COMMIT;
+ROLLBACK;
+
+
+
+/*
+VENTA N° 2:
+CLIENTE: ID: 2  NOMBRE: PEDRO
+COMPRA LOS SIGUIENTES PRODUCTOS:
+1.- CANTIDAD: 100 MANZANAS -> ID: 1, PRECIO_VENTA: 150
+2.- CANTIDAD: 50 PERAS -> ID: 2, PRECIO_VENTA: 200
+*/
+
+SELECT * FROM CLIENTES;
+SELECT * FROM PRODUCTOS;
+SELECT * FROM VENTAS;
+SELECT * FROM DETALLE_VENTAS;
+
+
+BEGIN;
+-- 1.- CREAR LA VENTA:
+INSERT INTO ventas (cod_venta, id_cliente) VALUES
+('2222222222', 2) RETURNING *;
+
+-- 2.- AGREGAR LOS PRODUCTOS VENDIDOS AL DETALLE_VENTAS
+-- PRIMER DETALLE VENTAS:
+INSERT INTO detalle_ventas VALUES
+(2, 1, 100, 150);
+
+-- SEGUNDO DETALLE VENTAS:
+INSERT INTO detalle_ventas VALUES
+(2, 2, 50, 200) RETURNING *;
+
+-- 3.- DESCONTAR EL STOCK DE LOS PRODUCTOS
+--ACTUALIZAR STOCK MANZANS -> ID 1
+UPDATE productos SET stock = stock - 100 WHERE id = 1;
+
+--ACTUALIZAR STOCK PERAS -> ID 2
+UPDATE productos SET stock = stock - 50 WHERE id = 2;
+
+COMMIT;
+ROLLBACK;
+
+SELECT *, (cantidad * precio_venta) sub_total FROM DETALLE_VENTAS;
+
+SELECT V.COD_VENTA, V.FECHA, V.HORA, C.NOMBRE, C.APELLIDO, C.RUT, P.NOMBRE, 
+DV.CANTIDAD, DV.PRECIO_VENTA, (DV.CANTIDAD * DV.PRECIO_VENTA) SUBTOTAL FROM VENTAS V
+JOIN CLIENTES C
+ON V.ID_CLIENTE = C.ID
+JOIN DETALLE_VENTAS DV
+ON DV.ID_VENTA = V.ID
+JOIN PRODUCTOS P
+ON DV.ID_PRODUCTO = P.ID
+WHERE V.COD_VENTA = '1111111111';
+
+
+SELECT SUM((DV.CANTIDAD * DV.PRECIO_VENTA)) FROM VENTAS V
+JOIN CLIENTES C
+ON V.ID_CLIENTE = C.ID
+JOIN DETALLE_VENTAS DV
+ON DV.ID_VENTA = V.ID
+JOIN PRODUCTOS P
+ON DV.ID_PRODUCTO = P.ID
+WHERE V.COD_VENTA = '1111111111';
+
+
+
+
+
