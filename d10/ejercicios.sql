@@ -125,3 +125,139 @@ ORDER BY PRECIO;
 SELECT * FROM categorias WHERE ID 
 IN((SELECT id_categoria FROM PRODUCTOS WHERE precio = (SELECT MAX(precio) FROM PRODUCTOS)));
 
+/*
+
+SELECT COLUMNA1, COLUMNA2 -> SELECCIÓN DE COLUMNAS
+FROM CATEGORIAS   -> DE DÓNDE SACAMOS LOS DATOS
+[JOIN PRODUCTOS] -> DE FORMA ALTERNATIVA PODEMOS UNIR DIFERENTES TABLAS
+WHERE PRECIO > 500 -> FILTRO REGISTRO A REGISTRO 
+[GROUP BY COLUMNA1, COLUMNA2] -> AGRUPAR POR COLUMNAS
+[HAVING ] -> LO MISMO QUE EL WHERE PERO CON GRUPOS
+[ORDER BY ] -> ORDENAR POR ALGUNA COLUMNA
+*/
+
+
+SELECT id_categoria, id, nombre, precio, stock FROM PRODUCTOS
+WHERE precio > 1500
+ORDER BY precio DESC;
+
+
+
+SELECT c.nombre, count(*), sum(stock), min(stock), max(stock) FROM CATEGORIAS c
+JOIN PRODUCTOS p
+ON P.id_categoria = c.id
+GROUP BY c.nombre
+ORDER BY c.nombre;
+
+
+SELECT * FROM PRODUCTOS WHERE STOCK = (SELECT MIN(STOCK) FROM PRODUCTOS);
+
+
+SELECT c.nombre, count(*) FROM CATEGORIAS c
+JOIN PRODUCTOS p
+ON P.id_categoria = c.id
+GROUP BY c.nombre
+HAVING count(*) >=2
+ORDER BY c.nombre;
+
+SELECT c.nombre, count(*) FROM CATEGORIAS c
+JOIN PRODUCTOS p
+ON P.id_categoria = c.id
+WHERE c.id NOT IN(1,2)
+GROUP BY c.nombre;
+
+SELECT c.nombre, count(*) FROM CATEGORIAS c
+JOIN PRODUCTOS p
+ON P.id_categoria = c.id
+GROUP BY c.nombre
+HAVING C.NOMBRE NOT IN('alimentos', 'aseo');
+
+
+
+
+
+CREATE TABLE clientes1(
+	id SERIAL PRIMARY KEY,
+	nombre VARCHAR(50),
+	email VARCHAR(125)
+);
+
+CREATE TABLE clientes2(
+	id SERIAL PRIMARY KEY,
+	nombre VARCHAR(50),
+	email VARCHAR(125)
+);
+
+CREATE TABLE empleados(
+	id SERIAL PRIMARY KEY,
+	nombre VARCHAR(50),
+	email VARCHAR(125)
+);
+
+INSERT INTO clientes1 VALUES 
+(DEFAULT, 'Pedro Soto', 'pedro.soto@gmail.com'),
+(DEFAULT, 'Marta Godoy', 'marta.godoy@gmail.com');
+
+INSERT INTO clientes2 VALUES 
+(DEFAULT, 'Carolina Meza', 'carolina_meza@gmail.com'),
+(DEFAULT, 'Pedro Soto', 'pedro.soto@gmail.com');
+ 
+INSERT INTO empleados VALUES 
+(DEFAULT, 'Marta Godoy', 'marta.godoy@gmail.com'),
+(DEFAULT, 'Carolina Meza', 'carolina_meza@gmail.com');
+
+SELECT nombre, count(*) FROM
+(SELECT nombre FROM clientes1
+UNION ALL
+SELECT nombre FROM clientes2) clientes_temp
+GROUP BY nombre
+HAVING count(*) = 1;
+ 
+ 
+
+SELECT nombre, email FROM clientes1
+UNION
+SELECT nombre, email FROM clientes2
+
+
+
+CREATE TABLE customers(
+	id SERIAL PRIMARY KEY,
+	nombre VARCHAR(50),
+	email VARCHAR(125)
+);
+
+INSERT INTO customers(nombre, email)
+SELECT nombre, email FROM
+(SELECT nombre, email FROM clientes1
+UNION
+SELECT nombre, email FROM clientes2) as clientes_temporales;
+
+
+SELECT * FROM CUSTOMERS;
+
+/*
+INSERT INTO clientes1 VALUES 
+(DEFAULT, 'Pedro Soto', 'pedro.soto@gmail.com'),
+(DEFAULT, 'Marta Godoy', 'marta.godoy@gmail.com');
+
+INSERT INTO clientes2 VALUES 
+(DEFAULT, 'Carolina Meza', 'carolina_meza@gmail.com'),
+(DEFAULT, 'Pedro Soto', 'pedro.soto@gmail.com');
+*/
+
+
+SELECT nombre, email FROM clientes1
+INTERSECT
+SELECT nombre, email FROM clientes2
+
+
+
+SELECT nombre, email FROM clientes1
+EXCEPT
+SELECT nombre, email FROM clientes2
+
+
+SELECT nombre, email FROM clientes2
+EXCEPT
+SELECT nombre, email FROM empleados
